@@ -1,7 +1,7 @@
 from labequipment import arduino
 import time
 
-motorbox = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_55735323935351809202-if00"
+motorbox = "/dev/serial/by-id/usb-Arduino__www.arduino.cc__0043_850333131373513111A0-if00"
 
 
 class SendSerialCommands():

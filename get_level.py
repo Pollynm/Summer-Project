@@ -4,25 +4,17 @@ from labvision import images
 from labequipment import arduino
 from labvision import camera
 from serial_commands import SendSerialCommands
-import time
 
 
 def get_level(duration=3):
     uneven = True
     cam = camera.Panasonic()
     while uneven:
-        im = load_image(cam)
+        im = cam.get_frame(delete=True)
         threshold_im, contour = find_contour(im)
         cropped_im = crop_to_rotated_rectangular_contour(threshold_im, contour)
         com, midpoint = get_com_and_midpoint(cropped_im)
         uneven = move_com_to_midpoint(com, midpoint, duration)
-
-
-def load_image(cam):
-    cam.take_frame()
-    filename = cam.save_file()
-    im = cv2.imread(filename)
-    return im
 
 
 def find_contour(im):
