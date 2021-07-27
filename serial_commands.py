@@ -9,7 +9,7 @@ class SendSerialCommands():
         """ Initialise with an instance of arduino.Arduino"""
         self.ard = arduino.Arduino(port=motorbox, wait=True)
 
-    def move_motors(self, motor_numbers, direction, duration=None):
+    def move_motors(self, motor_numbers, duration=None):
         """
         Generate the message to be sent to self.ard.send_serial_line
         Inputs:
@@ -17,11 +17,16 @@ class SendSerialCommands():
         direction: either 'f', 'b' or 'stop'
         duration: length of motor run (seconds)
         """
+        message=''
         for motors in motor_numbers:
-            message = str(motors) + direction
+            if duration[motors] > 0:
+                message = str(motors) + 'f'
+            elif duration[motors] < 0:
+                message = str(motors) + 'b'
             self.ard.send_serial_line(message)
-        if duration:
-            time.sleep(duration)
-            for motors in motor_numbers:
-                message = str(motors) + 'stop'
-                self.ard.send_serial_line(message)
+            time.sleep(abs(duration[motors]))
+            message = str(motors) + 'stop'
+            self.ard.send_serial_line(message)
+
+# motors = SendSerialCommands()
+# motors.move_motors([1], 'stop')

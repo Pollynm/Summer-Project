@@ -6,22 +6,31 @@ from labvision import camera
 from serial_commands import SendSerialCommands
 
 
-def get_level(duration=3):
-    uneven = True
+def get_level():
+    # uneven = True
     cam = camera.Panasonic()
-    while uneven:
-        im = cam.get_frame(delete=True)
-        threshold_im, contour = find_contour(im)
-        cropped_im = crop_to_rotated_rectangular_contour(threshold_im, contour)
-        com, midpoint = get_com_and_midpoint(cropped_im)
-        uneven = move_com_to_midpoint(com, midpoint, duration)
+    # while uneven:
+    im = cam.get_frame(delete=True)
+    im = images.rotate(im, 180)
+    threshold_im, contour = find_contour(im)
+    cropped_im = crop_to_rotated_rectangular_contour(threshold_im, contour)
+    com, midpoint = get_com_and_midpoint(cropped_im)
+    colour_im = images.gray_to_bgr(cropped_im)
+    colour_im = images.draw_circles(colour_im, (com[0], com[1], 15), color=[0, 0, 255], thickness=-1)
+    colour_im = images.draw_circles(colour_im, (midpoint[0], midpoint[1], 15), color=[255, 0, 0], thickness=-1)
+    images.display(colour_im)
+    print(com, midpoint)
+    move_com_to_midpoint(com, midpoint)
 
 
 def find_contour(im):
     greyscale_im = images.bgr_to_gray(im)
     threshold_im = images.threshold(greyscale_im, 75)
 
-    contours = images.find_contours(threshold_im)
+    kernel = np.ones((50, 50), np.uint8)
+    no_particles_im = cv2.morphologyEx(threshold_im, cv2.MORPH_CLOSE, kernel)
+
+    contours = images.find_contours(no_particles_im)
     sorted_contours = images.sort_contours(contours)
     biggest_contour = sorted_contours[-1]
 
@@ -60,36 +69,69 @@ def get_com_and_midpoint(im):
     return com, midpoint
 
 
-def move_com_to_midpoint(com, midpoint, duration):
+# def move_com_to_midpoint(com, midpoint, duration):
+#     xdiff = midpoint[0] - com[0]
+#     ydiff = midpoint[1] - com[1]
+#     xduration = duration * np.abs(xdiff)
+#     yduration = duration * np.abs(ydiff)
+#     ratio = 24.5 / 19.5
+#     if ydiff == 0 and xdiff == 0:
+#         print('surface is level')
+#         return False
+#     else:
+#         if xdiff > 0:
+#             cartesian_coord_steps_to_motor_commands('+i', xduration, ratio)
+#         if xdiff < 0:
+#             cartesian_coord_steps_to_motor_commands('-i', xduration, ratio)
+#         if ydiff < 0:
+#             cartesian_coord_steps_to_motor_commands('+j', yduration, ratio)
+#         if ydiff > 0:
+#             cartesian_coord_steps_to_motor_commands('-j', yduration, ratio)
+#         return True
+
+
+# def cartesian_coord_steps_to_motor_commands(command, duration, ratio):
+#     motors = SendSerialCommands()
+#     if command == '+i':
+#         motors.move_motors([1, 3], 'f', duration)
+#     if command == '-i':
+#         motors.move_motors([2], 'f', duration * ratio)
+#     if command == '+j':
+#         motors.move_motors([1], 'b', duration * ratio)
+#         motors.move_motors([2], 'b', duration * ratio ** 2)
+#     if command == '-j':
+#         motors.move_motors([3], 'b', duration * ratio)
+#         motors.move_motors([2], 'b', duration * ratio ** 2)
+
+
+def move_com_to_midpoint(com, midpoint):
     xdiff = midpoint[0] - com[0]
     ydiff = midpoint[1] - com[1]
-    magnitude = np.sqrt(xdiff ** 2 + ydiff ** 2)
-    duration = duration * (magnitude / 1000)
-    ratio = 24.5 / 19.5
     if ydiff == 0 and xdiff == 0:
         print('surface is level')
         return False
     else:
-        if xdiff > 0:
-            cartesian_coord_steps_to_motor_commands('+i', duration, ratio)
-        if xdiff < 0:
-            cartesian_coord_steps_to_motor_commands('-i', duration, ratio)
-        if ydiff < 0:
-            cartesian_coord_steps_to_motor_commands('+j', duration, ratio)
-        if ydiff > 0:
-            cartesian_coord_steps_to_motor_commands('-j', duration, ratio)
+        coord_diffs_to_serial_commands(xdiff, ydiff)
         return True
 
 
-def cartesian_coord_steps_to_motor_commands(command, duration, ratio):
+def coord_diffs_to_serial_commands(xdiff, ydiff):
+    scaling = 0.0001
+    xduration = scaling * np.abs(xdiff)**2
+    yduration = scaling * np.abs(ydiff)**2
+    ratio = 24.5 / 19.5
+    duration = [0, 0, 0, 0]
+    if xdiff > 0:
+        duration[1] += xduration
+        duration[3] += xduration
+    if xdiff < 0:
+        duration[2] += xduration * ratio
+    if ydiff < 0:
+        duration[1] -= yduration * ratio
+        duration[2] -= yduration * ratio ** 2
+    if ydiff > 0:
+        duration[3] -= yduration * ratio
+        duration[2] -= yduration * ratio ** 2
+    print(duration)
     motors = SendSerialCommands()
-    if command == '+i':
-        motors.move_motors([1, 2], 'f', duration)
-    if command == '-i':
-        motors.move_motors([3], 'f', duration * ratio)
-    if command == '+j':
-        motors.move_motors([2], 'b', duration * ratio)
-        motors.move_motors([3], 'b', duration * ratio ** 2)
-    if command == '-j':
-        motors.move_motors([1], 'b', duration * ratio)
-        motors.move_motors([3], 'b', duration * ratio ** 2)
+    motors.move_motors([1, 2, 3], duration)
