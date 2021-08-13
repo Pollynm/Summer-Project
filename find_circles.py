@@ -10,4 +10,13 @@ from get_level import *
 # images.draw_circles(crop2, particles, (0, 0, 255), 5)
 # images.display(crop2)
 
+
+# im = cv2.imread('2021_07_30_15_38_24')
+# images.display(im)
+# im = images.rotate(im, 180)
+# threshold_im, contour = find_contour(im)
+# images.display(threshold_im)
+# cropped_im = crop_to_rotated_rectangular_contour(threshold_im, contour)
+# images.display(cropped_im)
+
 get_level()
