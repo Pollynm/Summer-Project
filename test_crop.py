@@ -6,9 +6,10 @@ from moviepy.editor import *
 
 def format_im(im):
     greyscale_im = images.bgr_to_gray(im)
-    blurred_im = images.median_blur(greyscale_im, 7)
+    blurred_im = greyscale_im  # images.median_blur(greyscale_im, 7)
     threshold_im = images.threshold(blurred_im, 88)
     threshold_im = np.uint32(threshold_im)
+    # threshold_im = np.invert(threshold_im)
     return threshold_im
 
 
@@ -45,7 +46,7 @@ def format_video_frame(im, frame_no, rows, cols):
             cropped = im[j:j + box_width, i:i + box_height]
             if white_pixel_percentage_array[a][b] <= 99:
                 no_white_pixels = np.sum(cropped == 255)
-                white_pixel_percentage = (no_white_pixels / cropped.size)*100
+                white_pixel_percentage = (no_white_pixels / cropped.size) * 100
                 white_pixel_percentage_array[a][b] = white_pixel_percentage
                 if white_pixel_percentage_array[a][b] >= 99:
                     white_pixel_percentage_array[a][b] = frame_no
@@ -81,7 +82,6 @@ def combine_boxes(video, rows, cols):
 
     print(white_pixel_percentage_array - 100)
 
-
-np.seterr(divide='ignore', invalid='ignore')
-white_pixel_percentage_array = np.ones((10, 10))
-combine_boxes('particles_annotate.mp4', 10, 10)
+# np.seterr(divide='ignore', invalid='ignore')
+# white_pixel_percentage_array = np.ones((10, 10))
+# combine_boxes('particles_annotate.mp4', 10, 10)

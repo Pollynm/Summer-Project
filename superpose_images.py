@@ -22,8 +22,5 @@ def superpose_images(cam, number_of_photos=5):
         loops_run += 1
 
 
-# cam = camera.Panasonic()
-# superpose_images(cam=cam)
-
-a = 30 % 10
-print(a)
+import pandas
+print(pandas.__version__)
